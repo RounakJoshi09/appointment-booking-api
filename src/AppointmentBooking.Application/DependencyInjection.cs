@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using MediatR;
-using AppointmentBooking.Application.Doctors.Handlers;
 
 namespace AppointmentBooking.Application
 {
@@ -8,7 +7,8 @@ namespace AppointmentBooking.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
-            services.AddMediatR(config => config.RegisterServicesFromAssembly(typeof(CreateDoctorCommandHandler).Assembly));
+            services.AddMediatR(config => config.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+
             return services;
         }
     }

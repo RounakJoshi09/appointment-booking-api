@@ -12,13 +12,19 @@ namespace AppointmentBooking.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+            // For Now Read and Write are using the same database
             services.AddDbContext<EntityContext>(options =>
                 options.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
+                    configuration.GetConnectionString("WriteConnection"),
                     b => b.MigrationsAssembly(typeof(EntityContext).Assembly.FullName)));
-
+            services.AddDbContext<ReadEntityContext>(options =>
+                options.UseSqlServer(
+                    configuration.GetConnectionString("ReadConnection"),
+                    b => b.MigrationsAssembly(typeof(ReadEntityContext).Assembly.FullName)));
             services.AddScoped<IEntityContext>(provider => provider.GetRequiredService<EntityContext>());
+            services.AddScoped<IEntityContext>(provider => provider.GetRequiredService<ReadEntityContext>());
             services.AddScoped<IDoctorRepository, DoctorRepository>();
+            services.AddScoped<IDoctorReadRepository, DoctorReadRepository>();
             return services;
         }
     }

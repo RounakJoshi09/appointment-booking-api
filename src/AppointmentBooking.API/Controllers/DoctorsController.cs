@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using AppointmentBooking.Application.DTOs;
 using MediatR;
 using AppointmentBooking.Application.Doctors.Commands;
+using AppointmentBooking.Application.Doctors.Queries;
 namespace AppointmentBooking.API.Controllers;
 
 [ApiController]
@@ -21,4 +22,10 @@ public class DoctorsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAllDoctors()
+    {
+        var result = await _mediator.Send(new GetDoctorsQuery());
+        return Ok(result);
+    }
 }
