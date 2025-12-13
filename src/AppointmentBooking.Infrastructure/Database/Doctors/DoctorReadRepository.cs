@@ -14,4 +14,34 @@ public class DoctorReadRepository : IDoctorReadRepository
     {
         return await _context.Doctors.ToListAsync();
     }
+
+    public async Task<List<DoctorSchedule>> GetDoctorSchedulesByDate(Guid doctorId, DateOnly date)
+    {
+        var dateTime = date.ToDateTime(TimeOnly.MinValue);
+        var dayOfWeek = (int)date.DayOfWeek;
+
+        var dateSpecificSchedules = await _context.DoctorSchedules
+            .Where(schedule =>
+                schedule.DoctorId == doctorId &&
+                schedule.Date.HasValue &&
+                schedule.Date.Value.Date == dateTime.Date &&
+                !schedule.IsOffDay &&
+                schedule.StartTime.HasValue &&
+                schedule.EndTime.HasValue)
+            .ToListAsync();
+
+        if (dateSpecificSchedules.Count > 0)
+        {
+            return dateSpecificSchedules;
+        }
+
+        return await _context.DoctorSchedules
+            .Where(schedule =>
+                schedule.DoctorId == doctorId &&
+                schedule.DayOfWeek == (DayOfWeek)dayOfWeek &&
+                !schedule.IsOffDay &&
+                schedule.StartTime.HasValue &&
+                schedule.EndTime.HasValue)
+            .ToListAsync();
+    }
 }

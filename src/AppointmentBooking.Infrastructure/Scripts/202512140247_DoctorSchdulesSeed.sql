@@ -62,6 +62,9 @@ BEGIN
     BEGIN
         INSERT INTO DoctorSchedules (Id, DoctorId, DayOfWeek, StartTime, EndTime, IsOffDay, CreatedAt, UpdatedAt)
         VALUES (NEWID(), @DrJonesId, 2, '10:00:00', '18:00:00', 0, GETUTCDATE(), GETUTCDATE());
+
+        INSERT INTO DoctorSchedules (Id, DoctorId, DayOfWeek, StartTime, EndTime, IsOffDay, CreatedAt, UpdatedAt)
+        VALUES (NEWID(), @DrJonesId, 2, '22:00:00', '23:00:00', 0, GETUTCDATE(), GETUTCDATE());
     END
 
     IF NOT EXISTS (SELECT 1 FROM DoctorSchedules WHERE DoctorId = @DrJonesId AND DayOfWeek = 3)

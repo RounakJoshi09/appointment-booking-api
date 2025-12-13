@@ -9,3 +9,4 @@ Assumptions:
 - The doctor may take leave on specific individual dates.
 - The doctor’s schedule can be modified for particular dates when needed
 - Doctors schedule startTime and endTime are stored in UTC time in the database.
+- While Getting doctor availability, the startTime and endTime is being converted to the local time zone of the doctor.

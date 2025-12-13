@@ -28,4 +28,19 @@ public class DoctorsController : ControllerBase
         var result = await _mediator.Send(new GetDoctorsQuery());
         return Ok(result);
     }
+
+    [HttpGet]
+    [Route("{id}/availability")]
+    public async Task<IActionResult> GetDoctorAvailability(
+        [FromRoute] Guid id,
+        [FromQuery] string date)
+    {
+        if (!DateOnly.TryParse(date, out var dateOnly))
+        {
+            return BadRequest(new { error = "Invalid date format. Expected format: YYYY-MM-DD" });
+        }
+
+        var result = await _mediator.Send(new GetDoctorAvailabilityQuery(id, dateOnly));
+        return Ok(result);
+    }
 }
