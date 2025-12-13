@@ -25,5 +25,6 @@ namespace AppointmentBooking.Infrastructure.Database
 
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
+        public DbSet<DataMigrationHistory> DataMigrationHistory { get; set; }
     }
 }

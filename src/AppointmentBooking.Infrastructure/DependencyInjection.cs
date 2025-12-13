@@ -25,6 +25,7 @@ namespace AppointmentBooking.Infrastructure
             services.AddScoped<IEntityContext>(provider => provider.GetRequiredService<ReadEntityContext>());
             services.AddScoped<IDoctorRepository, DoctorRepository>();
             services.AddScoped<IDoctorReadRepository, DoctorReadRepository>();
+            services.AddScoped<DataSeedingService>();
             return services;
         }
     }

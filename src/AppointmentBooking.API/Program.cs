@@ -1,5 +1,6 @@
 using AppointmentBooking.Application;
 using AppointmentBooking.Infrastructure;
+using AppointmentBooking.Infrastructure.Database;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,19 @@ builder.Services.AddApplication();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var seedingService = scope.ServiceProvider.GetRequiredService<DataSeedingService>();
+    try
+    {
+        await seedingService.SeedDataAsync();
+    }
+    catch (Exception ex)
+    {
+        throw new Exception("An error occurred while seeding the database", ex);
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
