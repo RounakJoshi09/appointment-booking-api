@@ -1,3 +1,4 @@
+using AppointmentBooking.Application;
 using AppointmentBooking.Infrastructure;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
@@ -16,6 +17,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
