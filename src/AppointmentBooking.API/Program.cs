@@ -1,6 +1,7 @@
 using AppointmentBooking.Application;
 using AppointmentBooking.Infrastructure;
 using AppointmentBooking.Infrastructure.Database;
+using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,16 +24,27 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// Apply EF Migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
-    var seedingService = scope.ServiceProvider.GetRequiredService<DataSeedingService>();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
     try
     {
+        logger.LogInformation("Applying database migrations...");
+        var context = services.GetRequiredService<EntityContext>();
+        await context.Database.MigrateAsync();
+        logger.LogInformation("Database migrations applied successfully.");
+
+        var seedingService = services.GetRequiredService<DataSeedingService>();
         await seedingService.SeedDataAsync();
+        logger.LogInformation("Data seeding completed successfully.");
     }
     catch (Exception ex)
     {
-        throw new Exception("An error occurred while seeding the database", ex);
+        logger.LogError(ex, "An error occurred while initializing the database");
+        throw;
     }
 }
 
