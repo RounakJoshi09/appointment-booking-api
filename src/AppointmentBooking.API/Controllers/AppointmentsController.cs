@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using AppointmentBooking.Application.Appointments.Commands;
+using AppointmentBooking.Application.Appointments.Queries;
 using AppointmentBooking.Application.DTOs.Appointments;
 
 namespace AppointmentBooking.API.Controllers;
@@ -20,6 +21,26 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequest request)
     {
         var result = await _mediator.Send(new CreateAppointmentCommand(request));
+        return Ok(result);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAppointments(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? doctorId = null,
+        [FromQuery] Guid? patientId = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null)
+    {
+        var result = await _mediator.Send(new GetAppointmentsQuery(
+            page,
+            pageSize,
+            doctorId,
+            patientId,
+            startDate,
+            endDate
+        ));
         return Ok(result);
     }
 }

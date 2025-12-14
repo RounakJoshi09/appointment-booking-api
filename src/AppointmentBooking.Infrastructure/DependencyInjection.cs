@@ -28,6 +28,7 @@ namespace AppointmentBooking.Infrastructure
             services.AddScoped<IDoctorRepository, DoctorRepository>();
             services.AddScoped<IDoctorReadRepository, DoctorReadRepository>();
             services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            services.AddScoped<IAppointmentReadRepository, AppointmentReadRepository>();
             services.AddScoped<DataSeedingService>();
             return services;
         }
