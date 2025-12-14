@@ -7,6 +7,8 @@ using AppointmentBooking.Infrastructure.Database.Doctors;
 using AppointmentBooking.Application.Interfaces.Doctors;
 using AppointmentBooking.Application.Interfaces.Appointments;
 using AppointmentBooking.Infrastructure.Database.Appointments;
+using AppointmentBooking.Application.Interfaces.Patients;
+using AppointmentBooking.Infrastructure.Database.Patients;
 
 namespace AppointmentBooking.Infrastructure
 {
@@ -29,6 +31,7 @@ namespace AppointmentBooking.Infrastructure
             services.AddScoped<IDoctorReadRepository, DoctorReadRepository>();
             services.AddScoped<IAppointmentRepository, AppointmentRepository>();
             services.AddScoped<IAppointmentReadRepository, AppointmentReadRepository>();
+            services.AddScoped<IPatientReadRepository, PatientReadRepository>();
             services.AddScoped<DataSeedingService>();
             return services;
         }
