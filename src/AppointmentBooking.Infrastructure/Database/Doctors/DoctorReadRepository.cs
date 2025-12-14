@@ -110,4 +110,30 @@ public class DoctorReadRepository : IDoctorReadRepository
 
         return availableSlots.OrderBy(slot => slot.StartTime).ToList();
     }
+
+    public async Task<List<DoctorSchedule>> GetDoctorSchedulesByDateIncludingOffDays(Guid doctorId, DateOnly date)
+    {
+        var dateTime = date.ToDateTime(TimeOnly.MinValue);
+        var dayOfWeek = date.DayOfWeek;
+
+        var dateSpecificSchedules = await _context.DoctorSchedules
+            .Where(schedule =>
+                schedule.DoctorId == doctorId &&
+                schedule.Date.HasValue &&
+                schedule.Date.Value.Date == dateTime.Date)
+            .ToListAsync();
+
+        if (dateSpecificSchedules.Count > 0)
+        {
+            return dateSpecificSchedules;
+        }
+
+        // If no date-specific schedules, get recurring schedules for this day of week
+        return await _context.DoctorSchedules
+            .Where(schedule =>
+                schedule.DoctorId == doctorId &&
+                schedule.DayOfWeek == dayOfWeek &&
+                !schedule.Date.HasValue)
+            .ToListAsync();
+    }
 }

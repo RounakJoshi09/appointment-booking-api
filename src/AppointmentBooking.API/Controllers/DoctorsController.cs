@@ -43,4 +43,38 @@ public class DoctorsController : ControllerBase
         var result = await _mediator.Send(new GetDoctorAvailabilityQuery(doctorId, dateOnly));
         return Ok(result);
     }
+
+    [HttpPost]
+    [Route("schedule")]
+    public async Task<IActionResult> AddDoctorSchedule([FromBody] AddDoctorScheduleRequest request)
+    {
+        try
+        {
+            var result = await _mediator.Send(new AddDoctorScheduleCommand(request));
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    [Route("{doctorId}/schedules")]
+    public async Task<IActionResult> GetDoctorSchedules(
+        [FromRoute] Guid doctorId,
+        [FromQuery] string date)
+    {
+        if (!DateOnly.TryParse(date, out var dateOnly))
+        {
+            return BadRequest(new { error = "Invalid date format. Expected format: YYYY-MM-DD" });
+        }
+
+        var result = await _mediator.Send(new GetDoctorSchedulesQuery(doctorId, dateOnly));
+        return Ok(result);
+    }
 }

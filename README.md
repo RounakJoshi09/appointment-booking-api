@@ -82,14 +82,20 @@ dotnet test
 ## API Endpoints
 
 ```
+GET /api/health
+
 GET /api/appointments
-GET /api/appointments/{id}
+GET /api/appointments/{appointmentId}
 POST /api/appointments
-PUT /api/appointments/{id}/cancel
+PUT /api/appointments/{appointmentId}/cancel
 
 POST /api/doctors
 GET /api/doctors
-GET /api/doctors/{id}/availability
+GET /api/doctors/{doctorId}/availability
+POST /api/doctors/schedule
+GET /api/doctors/{doctorId}/schedules
+
+GET /api/patients
 ```
 
 ## Assumptions
