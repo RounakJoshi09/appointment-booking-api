@@ -57,4 +57,12 @@ public class AppointmentReadRepository : IAppointmentReadRepository
 
         return (appointments, totalCount);
     }
+
+    public async Task<Appointment?> GetAppointmentById(Guid id, CancellationToken cancellationToken)
+    {
+        return await _context.Appointments
+            .Include(a => a.Doctor)
+            .Include(a => a.Patient)
+            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+    }
 }

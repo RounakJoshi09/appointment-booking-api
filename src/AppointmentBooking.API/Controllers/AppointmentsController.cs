@@ -44,6 +44,19 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetAppointmentById(Guid id)
+    {
+        var result = await _mediator.Send(new GetAppointmentByIdQuery(id));
+
+        if (result == null)
+        {
+            return NotFound(new { message = "Appointment not found" });
+        }
+
+        return Ok(result);
+    }
+
     [HttpPut("{id}/cancel")]
     public async Task<IActionResult> CancelAppointment(Guid id)
     {

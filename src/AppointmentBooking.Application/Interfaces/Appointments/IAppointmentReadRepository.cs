@@ -12,4 +12,6 @@ public interface IAppointmentReadRepository
         DateTime? startDate,
         DateTime? endDate,
         CancellationToken cancellationToken);
+
+    Task<Appointment?> GetAppointmentById(Guid id, CancellationToken cancellationToken);
 }
