@@ -10,3 +10,17 @@ Assumptions:
 - The doctor’s schedule can be modified for particular dates when needed
 - Doctors schedule startTime and endTime are stored in UTC time in the database.
 - While Getting doctor availability, the startTime and endTime is being converted to the local time zone of the doctor.
+
+## Running Tests
+
+To run all tests:
+
+```bash
+dotnet test
+```
+
+To run tests for a specific project:
+
+```bash
+dotnet test tests/AppointmentBooking.Application.Tests/AppointmentBooking.Application.Tests.csproj
+```
