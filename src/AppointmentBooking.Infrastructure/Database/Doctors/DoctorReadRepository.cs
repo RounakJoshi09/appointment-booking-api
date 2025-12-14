@@ -1,6 +1,7 @@
 namespace AppointmentBooking.Infrastructure.Database.Doctors;
 using AppointmentBooking.Application.Interfaces.Doctors;
 using AppointmentBooking.Domain.Entities;
+using AppointmentBooking.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 public class DoctorReadRepository : IDoctorReadRepository
@@ -43,5 +44,70 @@ public class DoctorReadRepository : IDoctorReadRepository
                 schedule.StartTime.HasValue &&
                 schedule.EndTime.HasValue)
             .ToListAsync();
+    }
+
+    public async Task<List<AvailabilitySlot>> GetDoctorsAvailabilityByDate(Guid doctorId, DateOnly date)
+    {
+        var schedules = await GetDoctorSchedulesByDate(doctorId, date);
+
+        if (schedules.Count == 0)
+        {
+            return new List<AvailabilitySlot>();
+        }
+
+        var dateTime = date.ToDateTime(TimeOnly.MinValue);
+        var appointments = await _context.Appointments
+            .Where(a =>
+                a.DoctorId == doctorId &&
+                a.Status == AppointmentStatus.Scheduled &&
+                a.AppointmentDateTime.Date == dateTime.Date)
+            .OrderBy(a => a.AppointmentDateTime)
+            .ToListAsync();
+
+        var availableSlots = new List<AvailabilitySlot>();
+
+        foreach (var schedule in schedules)
+        {
+            var scheduleStart = schedule.StartTime!.Value;
+            var scheduleEnd = schedule.EndTime!.Value;
+
+            var relevantAppointments = appointments
+                .Where(a =>
+                {
+                    var appointmentTime = a.AppointmentDateTime.TimeOfDay;
+                    var appointmentEnd = appointmentTime + a.Duration;
+                    return appointmentTime < scheduleEnd && appointmentEnd > scheduleStart;
+                })
+                .OrderBy(a => a.AppointmentDateTime.TimeOfDay)
+                .ToList();
+
+            if (relevantAppointments.Count == 0)
+            {
+                availableSlots.Add(new AvailabilitySlot(scheduleStart, scheduleEnd));
+                continue;
+            }
+
+            var currentTime = scheduleStart;
+
+            foreach (var appointment in relevantAppointments)
+            {
+                var appointmentStart = appointment.AppointmentDateTime.TimeOfDay;
+                var appointmentEnd = appointmentStart + appointment.Duration;
+
+                if (currentTime < appointmentStart)
+                {
+                    availableSlots.Add(new AvailabilitySlot(currentTime, appointmentStart));
+                }
+
+                currentTime = appointmentEnd > currentTime ? appointmentEnd : currentTime;
+            }
+
+            if (currentTime < scheduleEnd)
+            {
+                availableSlots.Add(new AvailabilitySlot(currentTime, scheduleEnd));
+            }
+        }
+
+        return availableSlots.OrderBy(slot => slot.StartTime).ToList();
     }
 }

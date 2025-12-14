@@ -17,14 +17,13 @@ public class GetDoctorAvailabilityQueryHandler : IRequestHandler<GetDoctorAvaila
 
     public async Task<DoctorAvailabilityResponse> Handle(GetDoctorAvailabilityQuery request, CancellationToken cancellationToken)
     {
-        var schedules = await _doctorReadRepository.GetDoctorSchedulesByDate(request.DoctorId, request.Date);
+        var availabilitySlots = await _doctorReadRepository.GetDoctorsAvailabilityByDate(request.DoctorId, request.Date);
 
-        var timeSlots = schedules
-            .Select(schedule => new TimeSlot(
-                Utils.ConvertUtcToTimeZone(schedule.StartTime!.Value, TimeZoneConstants.IndiaStandardTime),
-                Utils.ConvertUtcToTimeZone(schedule.EndTime!.Value, TimeZoneConstants.IndiaStandardTime)
+        var timeSlots = availabilitySlots
+            .Select(slot => new TimeSlot(
+                Utils.ConvertUtcToTimeZone(slot.StartTime, TimeZoneConstants.IndiaStandardTime),
+                Utils.ConvertUtcToTimeZone(slot.EndTime, TimeZoneConstants.IndiaStandardTime)
             ))
-            .OrderBy(slot => slot.StartTime)
             .ToList();
 
         return new DoctorAvailabilityResponse(

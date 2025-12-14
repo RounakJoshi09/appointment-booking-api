@@ -30,9 +30,9 @@ public class DoctorsController : ControllerBase
     }
 
     [HttpGet]
-    [Route("{id}/availability")]
+    [Route("{doctorId}/availability")]
     public async Task<IActionResult> GetDoctorAvailability(
-        [FromRoute] Guid id,
+        [FromRoute] Guid doctorId,
         [FromQuery] string date)
     {
         if (!DateOnly.TryParse(date, out var dateOnly))
@@ -40,7 +40,7 @@ public class DoctorsController : ControllerBase
             return BadRequest(new { error = "Invalid date format. Expected format: YYYY-MM-DD" });
         }
 
-        var result = await _mediator.Send(new GetDoctorAvailabilityQuery(id, dateOnly));
+        var result = await _mediator.Send(new GetDoctorAvailabilityQuery(doctorId, dateOnly));
         return Ok(result);
     }
 }

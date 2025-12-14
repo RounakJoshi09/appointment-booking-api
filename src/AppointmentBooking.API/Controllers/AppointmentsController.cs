@@ -44,10 +44,10 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetAppointmentById(Guid id)
+    [HttpGet("{appointmentId}")]
+    public async Task<IActionResult> GetAppointmentById(Guid appointmentId)
     {
-        var result = await _mediator.Send(new GetAppointmentByIdQuery(id));
+        var result = await _mediator.Send(new GetAppointmentByIdQuery(appointmentId));
 
         if (result == null)
         {
@@ -57,10 +57,10 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{id}/cancel")]
-    public async Task<IActionResult> CancelAppointment(Guid id)
+    [HttpPut("{appointmentId}/cancel")]
+    public async Task<IActionResult> CancelAppointment(Guid appointmentId)
     {
-        var result = await _mediator.Send(new CancelAppointmentCommand(id));
+        var result = await _mediator.Send(new CancelAppointmentCommand(appointmentId));
         return Ok(result);
     }
 }

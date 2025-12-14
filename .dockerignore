@@ -7,7 +7,6 @@
 **/.vscode
 **/*.*proj.user
 **/bin
-**/charts
 **/docker-compose*
 **/Dockerfile*
 **/obj
