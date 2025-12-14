@@ -43,4 +43,11 @@ public class AppointmentsController : ControllerBase
         ));
         return Ok(result);
     }
+
+    [HttpPut("{id}/cancel")]
+    public async Task<IActionResult> CancelAppointment(Guid id)
+    {
+        var result = await _mediator.Send(new CancelAppointmentCommand(id));
+        return Ok(result);
+    }
 }

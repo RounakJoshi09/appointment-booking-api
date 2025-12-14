@@ -22,6 +22,19 @@ public class AppointmentRepository : IAppointmentRepository
         return appointment;
     }
 
+    public async Task<Appointment?> GetAppointmentById(Guid appointmentId, CancellationToken cancellationToken)
+    {
+        return await _context.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
+    }
+
+    public async Task<Appointment> UpdateAppointment(Appointment appointment, CancellationToken cancellationToken)
+    {
+        _context.Appointments.Update(appointment);
+        await _context.SaveChangesAsync(cancellationToken);
+        return appointment;
+    }
+
     public async Task<bool> HasOverlappingAppointment(Guid doctorId, DateTime appointmentDateTime, TimeSpan duration, CancellationToken cancellationToken)
     {
         var appointmentEndTime = appointmentDateTime.Add(duration);
