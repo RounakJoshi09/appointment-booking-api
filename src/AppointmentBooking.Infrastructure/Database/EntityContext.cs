@@ -1,3 +1,4 @@
+using System.Reflection;
 using AppointmentBooking.Application.Interfaces;
 using AppointmentBooking.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -22,10 +23,16 @@ namespace AppointmentBooking.Infrastructure.Database
             }
             return base.SaveChangesAsync(cancellationToken);
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        }
 
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<DataMigrationHistory> DataMigrationHistory { get; set; }
         public DbSet<Patient> Patients { get; set; }
+        public DbSet<Appointment> Appointments { get; set; }
     }
 }
