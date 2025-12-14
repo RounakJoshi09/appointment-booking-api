@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using AppointmentBooking.Application.Interfaces;
 using AppointmentBooking.Infrastructure.Database.Doctors;
 using AppointmentBooking.Application.Interfaces.Doctors;
+using AppointmentBooking.Application.Interfaces.Appointments;
+using AppointmentBooking.Infrastructure.Database.Appointments;
 
 namespace AppointmentBooking.Infrastructure
 {
@@ -25,6 +27,7 @@ namespace AppointmentBooking.Infrastructure
             services.AddScoped<IEntityContext>(provider => provider.GetRequiredService<ReadEntityContext>());
             services.AddScoped<IDoctorRepository, DoctorRepository>();
             services.AddScoped<IDoctorReadRepository, DoctorReadRepository>();
+            services.AddScoped<IAppointmentRepository, AppointmentRepository>();
             services.AddScoped<DataSeedingService>();
             return services;
         }

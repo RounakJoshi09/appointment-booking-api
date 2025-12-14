@@ -10,6 +10,10 @@ Assumptions:
 - The doctor’s schedule can be modified for particular dates when needed
 - Doctors schedule startTime and endTime are stored in UTC time in the database.
 - While Getting doctor availability, the startTime and endTime is being converted to the local time zone of the doctor.
+- A Doctor can have multiple Schdules for the Same Day
+
+- For Appointment Booking
+  - The appointment date time is being expected in clients timezone(considering IST Currently).
 
 ## Running Tests
 

@@ -36,4 +36,26 @@ public static class Utils
             throw new ArgumentException($"Timezone '{timeZoneId}' is invalid.", nameof(timeZoneId));
         }
     }
+
+    public static DateTime ConvertTimeZoneToUtc(DateTime dateTime, string timeZoneId)
+    {
+        try
+        {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+
+            var unspecifiedDateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+
+            var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(unspecifiedDateTime, timeZone);
+
+            return utcDateTime;
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            throw new ArgumentException($"Timezone '{timeZoneId}' not found. Please use a valid timezone identifier.", nameof(timeZoneId));
+        }
+        catch (InvalidTimeZoneException)
+        {
+            throw new ArgumentException($"Timezone '{timeZoneId}' is invalid.", nameof(timeZoneId));
+        }
+    }
 }
