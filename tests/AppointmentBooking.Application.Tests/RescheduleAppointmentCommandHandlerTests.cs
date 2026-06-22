@@ -132,8 +132,8 @@ public class RescheduleAppointmentCommandHandlerTests
         {
             DoctorId = appointment.DoctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(12)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
         };
 
         _mockRepository.Setup(x => x.GetAppointmentById(appointment.Id, It.IsAny<CancellationToken>()))
@@ -167,8 +167,8 @@ public class RescheduleAppointmentCommandHandlerTests
         {
             DoctorId = appointment.DoctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(12)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
         };
 
         _mockRepository.Setup(x => x.GetAppointmentById(appointment.Id, It.IsAny<CancellationToken>()))
@@ -224,8 +224,8 @@ public class RescheduleAppointmentCommandHandlerTests
         {
             DoctorId = appointment.DoctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(12)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
         };
 
         _mockRepository.Setup(x => x.GetAppointmentById(appointment.Id, It.IsAny<CancellationToken>()))

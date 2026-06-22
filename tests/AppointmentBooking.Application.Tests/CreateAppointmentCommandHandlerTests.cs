@@ -100,12 +100,13 @@ public class CreateAppointmentCommandHandlerTests
         };
         var command = new CreateAppointmentCommand(request);
 
+        // Schedules are IST wall-clock times (same as request AppointmentDateTime).
         var morningSchedule = new DoctorSchedule
         {
             DoctorId = doctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(8)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(12)
         };
 
         var eveningSchedule = new DoctorSchedule
@@ -155,8 +156,8 @@ public class CreateAppointmentCommandHandlerTests
         {
             DoctorId = request.DoctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(12)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
         };
 
         _mockRepository.Setup(x => x.PatientExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -192,8 +193,8 @@ public class CreateAppointmentCommandHandlerTests
         {
             DoctorId = doctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(12)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
         };
 
         _mockRepository.Setup(x => x.PatientExists(patientId, It.IsAny<CancellationToken>()))
@@ -236,8 +237,8 @@ public class CreateAppointmentCommandHandlerTests
         {
             DoctorId = doctorId,
             IsOffDay = false,
-            StartTime = TimeSpan.FromHours(4),
-            EndTime = TimeSpan.FromHours(12)
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
         };
 
         _mockRepository.Setup(x => x.PatientExists(patientId, It.IsAny<CancellationToken>()))
@@ -265,6 +266,12 @@ public class CreateAppointmentCommandHandlerTests
         result.Duration.Should().Be(TimeSpan.FromMinutes(45));
         result.Status.Should().Be(AppointmentStatus.Scheduled);
         result.AppointmentDateTime.Kind.Should().Be(DateTimeKind.Utc);
+
+        // Schedule day must use local IST date (not UTC-shifted previous day).
+        _mockRepository.Verify(x => x.GetDoctorSchedules(
+            doctorId,
+            new DateTime(2025, 12, 15).Date,
+            It.IsAny<CancellationToken>()), Times.Once);
 
         _mockRepository.Verify(x => x.CreateAppointment(
             It.Is<Appointment>(a =>

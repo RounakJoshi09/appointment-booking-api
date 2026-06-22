@@ -39,21 +39,27 @@ public class AppointmentRepository : IAppointmentRepository
     {
         var appointmentEndTime = appointmentDateTime.Add(duration);
 
+        // Load ±1 calendar day so midnight-straddling appointments are included;
+        // precise conflict detection is done by interval comparison below.
+        var windowStartDate = appointmentDateTime.Date.AddDays(-1);
+        var windowEndDate = appointmentDateTime.Date.AddDays(1);
+
         var query = _context.Appointments
             .Where(a => a.DoctorId == doctorId
                 && a.Status == AppointmentStatus.Scheduled
-                && a.AppointmentDateTime.Date == appointmentDateTime.Date);
+                && a.AppointmentDateTime.Date >= windowStartDate
+                && a.AppointmentDateTime.Date <= windowEndDate);
 
         if (excludeAppointmentId.HasValue)
         {
             query = query.Where(a => a.Id != excludeAppointmentId.Value);
         }
 
-        var appointmentsOnDate = await query
+        var candidateAppointments = await query
             .Select(a => new { a.AppointmentDateTime, a.Duration })
             .ToListAsync(cancellationToken);
 
-        var hasOverlap = appointmentsOnDate.Any(a =>
+        var hasOverlap = candidateAppointments.Any(a =>
         {
             var existingEndTime = a.AppointmentDateTime.Add(a.Duration);
             return appointmentDateTime < existingEndTime && appointmentEndTime > a.AppointmentDateTime;
