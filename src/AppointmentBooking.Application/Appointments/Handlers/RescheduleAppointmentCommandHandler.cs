@@ -1,0 +1,113 @@
+﻿using System.ComponentModel.DataAnnotations;
+using MediatR;
+using AppointmentBooking.Application.Appointments.Commands;
+using AppointmentBooking.Application.Constants;
+using AppointmentBooking.Application.DTOs.Appointments;
+using AppointmentBooking.Application.Interfaces.Appointments;
+using AppointmentBooking.Domain.Enums;
+
+namespace AppointmentBooking.Application.Appointments.Handlers;
+
+public class RescheduleAppointmentCommandHandler : IRequestHandler<RescheduleAppointmentCommand, RescheduleAppointmentResponse>
+{
+    private readonly IAppointmentRepository _appointmentRepository;
+
+    public RescheduleAppointmentCommandHandler(IAppointmentRepository appointmentRepository)
+    {
+        _appointmentRepository = appointmentRepository;
+    }
+
+    public async Task<RescheduleAppointmentResponse> Handle(RescheduleAppointmentCommand request, CancellationToken cancellationToken)
+    {
+        var appointment = await _appointmentRepository.GetAppointmentById(request.AppointmentId, cancellationToken);
+
+        if (appointment == null)
+        {
+            throw new ValidationException($"Appointment with ID {request.AppointmentId} does not exist");
+        }
+
+        if (appointment.Status == AppointmentStatus.Cancelled)
+        {
+            throw new ValidationException("Cannot reschedule a cancelled appointment");
+        }
+
+        if (appointment.Status == AppointmentStatus.Completed)
+        {
+            throw new ValidationException("Cannot reschedule a completed appointment");
+        }
+
+        if (appointment.Status != AppointmentStatus.Scheduled)
+        {
+            throw new ValidationException($"Can only reschedule appointments with Scheduled status. Current status: {appointment.Status}");
+        }
+
+        var utcAppointmentDateTime = Utils.ConvertTimeZoneToUtc(request.Request.AppointmentDateTime, TimeZoneConstants.IndiaStandardTime);
+        var duration = TimeSpan.FromMinutes(request.Request.DurationInMinutes ?? (int)appointment.Duration.TotalMinutes);
+
+        var doctorSchedules = await _appointmentRepository.GetDoctorSchedules(
+            appointment.DoctorId,
+            utcAppointmentDateTime.Date,
+            cancellationToken);
+
+        if (doctorSchedules == null || !doctorSchedules.Any())
+        {
+            throw new ValidationException($"Doctor does not have a schedule configured for {request.Request.AppointmentDateTime}");
+        }
+
+        if (doctorSchedules.All(s => s.IsOffDay))
+        {
+            throw new ValidationException($"Doctor is not available on {request.Request.AppointmentDateTime} (off day)");
+        }
+
+        var appointmentTime = utcAppointmentDateTime.TimeOfDay;
+        var appointmentEndTime = appointmentTime.Add(duration);
+
+        var isWithinWorkingHours = false;
+        foreach (var schedule in doctorSchedules.Where(s => !s.IsOffDay))
+        {
+            if (schedule.StartTime == null || schedule.EndTime == null)
+            {
+                continue;
+            }
+
+            if (appointmentTime >= schedule.StartTime.Value && appointmentEndTime <= schedule.EndTime.Value)
+            {
+                isWithinWorkingHours = true;
+                break;
+            }
+        }
+
+        if (!isWithinWorkingHours)
+        {
+            throw new ValidationException("Appointment time must be within doctor's working hours");
+        }
+
+        var hasOverlap = await _appointmentRepository.HasOverlappingAppointment(
+            appointment.DoctorId,
+            utcAppointmentDateTime,
+            duration,
+            cancellationToken,
+            excludeAppointmentId: appointment.Id);
+
+        if (hasOverlap)
+        {
+            throw new ValidationException("Doctor already has an appointment scheduled during this time. Please choose a different time slot.");
+        }
+
+        appointment.AppointmentDateTime = utcAppointmentDateTime;
+        appointment.Duration = duration;
+
+        var updatedAppointment = await _appointmentRepository.UpdateAppointment(appointment, cancellationToken);
+
+        return new RescheduleAppointmentResponse
+        {
+            Id = updatedAppointment.Id,
+            PatientId = updatedAppointment.PatientId,
+            DoctorId = updatedAppointment.DoctorId,
+            AppointmentDateTime = updatedAppointment.AppointmentDateTime,
+            Duration = updatedAppointment.Duration,
+            Status = updatedAppointment.Status,
+            Message = "Appointment rescheduled successfully"
+        };
+    }
+}

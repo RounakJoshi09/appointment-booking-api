@@ -88,6 +88,7 @@ GET /api/appointments
 GET /api/appointments/{appointmentId}
 POST /api/appointments
 PUT /api/appointments/{appointmentId}/cancel
+PUT /api/appointments/{appointmentId}/reschedule
 
 POST /api/doctors
 GET /api/doctors

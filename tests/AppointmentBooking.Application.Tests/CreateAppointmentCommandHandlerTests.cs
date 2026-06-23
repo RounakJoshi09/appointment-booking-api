@@ -122,7 +122,7 @@ public class CreateAppointmentCommandHandlerTests
             .ReturnsAsync(true);
         _mockRepository.Setup(x => x.GetDoctorSchedules(doctorId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { morningSchedule, eveningSchedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+        _mockRepository.Setup(x => x.HasOverlappingAppointment(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
             .ReturnsAsync(false);
         _mockRepository.Setup(x => x.CreateAppointment(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Appointment a, CancellationToken ct) =>
@@ -165,7 +165,7 @@ public class CreateAppointmentCommandHandlerTests
             .ReturnsAsync(true);
         _mockRepository.Setup(x => x.GetDoctorSchedules(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { schedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+        _mockRepository.Setup(x => x.HasOverlappingAppointment(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
             .ReturnsAsync(true);
 
         var exception = await Assert.ThrowsAsync<ValidationException>(() =>
@@ -202,7 +202,7 @@ public class CreateAppointmentCommandHandlerTests
             .ReturnsAsync(true);
         _mockRepository.Setup(x => x.GetDoctorSchedules(doctorId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { schedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+        _mockRepository.Setup(x => x.HasOverlappingAppointment(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
             .ReturnsAsync(false);
         _mockRepository.Setup(x => x.CreateAppointment(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Appointment a, CancellationToken ct) =>
@@ -246,7 +246,7 @@ public class CreateAppointmentCommandHandlerTests
             .ReturnsAsync(true);
         _mockRepository.Setup(x => x.GetDoctorSchedules(doctorId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { schedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(doctorId, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+        _mockRepository.Setup(x => x.HasOverlappingAppointment(doctorId, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()))
             .ReturnsAsync(false);
         _mockRepository.Setup(x => x.CreateAppointment(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Appointment a, CancellationToken ct) =>
