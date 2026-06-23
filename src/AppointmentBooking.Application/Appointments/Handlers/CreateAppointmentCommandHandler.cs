@@ -77,18 +77,7 @@ public class CreateAppointmentCommandHandler : IRequestHandler<CreateAppointment
             throw new ValidationException("Appointment time must be within doctor's working hours");
         }
 
-        // Overlap and persistence use UTC instants (appointments stored in UTC).
-        var hasOverlap = await _appointmentRepository.HasOverlappingAppointment(
-            request.Request.DoctorId,
-            utcAppointmentDateTime,
-            duration,
-            cancellationToken);
-
-        if (hasOverlap)
-        {
-            throw new ValidationException("Doctor already has an appointment scheduled during this time. Please choose a different time slot.");
-        }
-
+        // Overlap check + insert run atomically (serializable transaction) so concurrent bookings cannot both succeed.
         var appointment = new Appointment
         {
             PatientId = request.Request.PatientId,
@@ -98,7 +87,11 @@ public class CreateAppointmentCommandHandler : IRequestHandler<CreateAppointment
             Status = AppointmentStatus.Scheduled
         };
 
-        var createdAppointment = await _appointmentRepository.CreateAppointment(appointment, cancellationToken);
+        var createdAppointment = await _appointmentRepository.CreateAppointmentIfNoOverlap(appointment, cancellationToken);
+        if (createdAppointment is null)
+        {
+            throw new ValidationException("Doctor already has an appointment scheduled during this time. Please choose a different time slot.");
+        }
 
         return new CreateAppointmentResponse
         {
