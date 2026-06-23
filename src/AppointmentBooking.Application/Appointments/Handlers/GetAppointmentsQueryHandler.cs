@@ -16,9 +16,12 @@ public class GetAppointmentsQueryHandler : IRequestHandler<GetAppointmentsQuery,
 
     public async Task<PagedAppointmentsResponse> Handle(GetAppointmentsQuery request, CancellationToken cancellationToken)
     {
+        var page = request.Page < 1 ? 1 : request.Page;
+        var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
+
         var (appointments, totalCount) = await _appointmentReadRepository.GetAppointments(
-            request.Page,
-            request.PageSize,
+            page,
+            pageSize,
             request.DoctorId,
             request.PatientId,
             request.StartDate,
@@ -40,12 +43,12 @@ public class GetAppointmentsQueryHandler : IRequestHandler<GetAppointmentsQuery,
             a.UpdatedAt
         )).ToList();
 
-        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         return new PagedAppointmentsResponse(
             appointmentResponses,
-            request.Page,
-            request.PageSize,
+            page,
+            pageSize,
             totalCount,
             totalPages
         );
