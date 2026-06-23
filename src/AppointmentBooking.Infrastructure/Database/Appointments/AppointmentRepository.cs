@@ -35,14 +35,21 @@ public class AppointmentRepository : IAppointmentRepository
         return appointment;
     }
 
-    public async Task<bool> HasOverlappingAppointment(Guid doctorId, DateTime appointmentDateTime, TimeSpan duration, CancellationToken cancellationToken)
+    public async Task<bool> HasOverlappingAppointment(Guid doctorId, DateTime appointmentDateTime, TimeSpan duration, CancellationToken cancellationToken, Guid? excludeAppointmentId = null)
     {
         var appointmentEndTime = appointmentDateTime.Add(duration);
 
-        var appointmentsOnDate = await _context.Appointments
+        var query = _context.Appointments
             .Where(a => a.DoctorId == doctorId
                 && a.Status == AppointmentStatus.Scheduled
-                && a.AppointmentDateTime.Date == appointmentDateTime.Date)
+                && a.AppointmentDateTime.Date == appointmentDateTime.Date);
+
+        if (excludeAppointmentId.HasValue)
+        {
+            query = query.Where(a => a.Id != excludeAppointmentId.Value);
+        }
+
+        var appointmentsOnDate = await query
             .Select(a => new { a.AppointmentDateTime, a.Duration })
             .ToListAsync(cancellationToken);
 
