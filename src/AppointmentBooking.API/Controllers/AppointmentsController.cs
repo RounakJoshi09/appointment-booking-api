@@ -63,4 +63,11 @@ public class AppointmentsController : ControllerBase
         var result = await _mediator.Send(new CancelAppointmentCommand(appointmentId));
         return Ok(result);
     }
+
+    [HttpPut("{appointmentId}/reschedule")]
+    public async Task<IActionResult> RescheduleAppointment(Guid appointmentId, [FromBody] RescheduleAppointmentRequest request)
+    {
+        var result = await _mediator.Send(new RescheduleAppointmentCommand(appointmentId, request));
+        return Ok(result);
+    }
 }
