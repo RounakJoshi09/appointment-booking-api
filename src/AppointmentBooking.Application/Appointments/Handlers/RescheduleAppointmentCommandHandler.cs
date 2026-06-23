@@ -41,25 +41,28 @@ public class RescheduleAppointmentCommandHandler : IRequestHandler<RescheduleApp
             throw new ValidationException($"Can only reschedule appointments with Scheduled status. Current status: {appointment.Status}");
         }
 
-        var utcAppointmentDateTime = Utils.ConvertTimeZoneToUtc(request.Request.AppointmentDateTime, TimeZoneConstants.IndiaStandardTime);
+        // Request appointment is local IST; schedules are stored as IST clock times.
+        // Use local date/time for schedule lookup and working-hours checks only.
+        var localAppointmentDateTime = request.Request.AppointmentDateTime;
+        var utcAppointmentDateTime = Utils.ConvertTimeZoneToUtc(localAppointmentDateTime, TimeZoneConstants.IndiaStandardTime);
         var duration = TimeSpan.FromMinutes(request.Request.DurationInMinutes ?? (int)appointment.Duration.TotalMinutes);
 
         var doctorSchedules = await _appointmentRepository.GetDoctorSchedules(
             appointment.DoctorId,
-            utcAppointmentDateTime.Date,
+            localAppointmentDateTime.Date,
             cancellationToken);
 
         if (doctorSchedules == null || !doctorSchedules.Any())
         {
-            throw new ValidationException($"Doctor does not have a schedule configured for {request.Request.AppointmentDateTime}");
+            throw new ValidationException($"Doctor does not have a schedule configured for {localAppointmentDateTime}");
         }
 
         if (doctorSchedules.All(s => s.IsOffDay))
         {
-            throw new ValidationException($"Doctor is not available on {request.Request.AppointmentDateTime} (off day)");
+            throw new ValidationException($"Doctor is not available on {localAppointmentDateTime} (off day)");
         }
 
-        var appointmentTime = utcAppointmentDateTime.TimeOfDay;
+        var appointmentTime = localAppointmentDateTime.TimeOfDay;
         var appointmentEndTime = appointmentTime.Add(duration);
 
         var isWithinWorkingHours = false;
@@ -82,6 +85,7 @@ public class RescheduleAppointmentCommandHandler : IRequestHandler<RescheduleApp
             throw new ValidationException("Appointment time must be within doctor's working hours");
         }
 
+        // Overlap and persistence use UTC instants (appointments stored in UTC).
         var hasOverlap = await _appointmentRepository.HasOverlappingAppointment(
             appointment.DoctorId,
             utcAppointmentDateTime,
