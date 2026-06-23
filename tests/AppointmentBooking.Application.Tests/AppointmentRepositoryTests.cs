@@ -161,6 +161,38 @@ public class AppointmentRepositoryTests : IDisposable
         result.Should().BeFalse("cancelled appointments should be ignored");
     }
 
+    [Fact]
+    public async Task HasOverlappingAppointment_Should_Ignore_Excluded_Appointment()
+    {
+        var doctorId = Guid.NewGuid();
+        var existingAppointment = new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 15, 10, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+        await _context.Appointments.AddAsync(existingAppointment);
+        await _context.SaveChangesAsync();
+
+        var resultWithoutExclude = await _repository.HasOverlappingAppointment(
+            doctorId,
+            existingAppointment.AppointmentDateTime,
+            existingAppointment.Duration,
+            CancellationToken.None);
+
+        var resultWithExclude = await _repository.HasOverlappingAppointment(
+            doctorId,
+            existingAppointment.AppointmentDateTime,
+            existingAppointment.Duration,
+            CancellationToken.None,
+            excludeAppointmentId: existingAppointment.Id);
+
+        resultWithoutExclude.Should().BeTrue();
+        resultWithExclude.Should().BeFalse("excluded appointment should not count as overlap");
+    }
+
     #endregion
 
     #region GetDoctorSchedules Tests
