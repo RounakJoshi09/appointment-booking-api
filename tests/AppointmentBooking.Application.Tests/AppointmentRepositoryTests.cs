@@ -193,6 +193,54 @@ public class AppointmentRepositoryTests : IDisposable
         resultWithExclude.Should().BeFalse("excluded appointment should not count as overlap");
     }
 
+    [Fact]
+    public async Task HasOverlappingAppointment_Should_Detect_Overlap_When_New_Crosses_Midnight_Into_Next_Day()
+    {
+        var doctorId = Guid.NewGuid();
+        var existingNextDay = new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 16, 0, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+        await _context.Appointments.AddAsync(existingNextDay);
+        await _context.SaveChangesAsync();
+
+        // 23:45 today for 30 min ends 00:15 tomorrow — overlaps existing 00:00 tomorrow
+        var newAppointmentDateTime = new DateTime(2025, 12, 15, 23, 45, 0, DateTimeKind.Utc);
+        var duration = TimeSpan.FromMinutes(30);
+
+        var result = await _repository.HasOverlappingAppointment(doctorId, newAppointmentDateTime, duration, CancellationToken.None);
+
+        result.Should().BeTrue("new appointment spilling past midnight must conflict with early next-day booking");
+    }
+
+    [Fact]
+    public async Task HasOverlappingAppointment_Should_Detect_Overlap_When_Existing_Crosses_Midnight_From_Previous_Day()
+    {
+        var doctorId = Guid.NewGuid();
+        var existingPreviousDay = new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 14, 23, 50, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+        await _context.Appointments.AddAsync(existingPreviousDay);
+        await _context.SaveChangesAsync();
+
+        // Existing ends 00:20 today; new at 00:00 for 30 min overlaps
+        var newAppointmentDateTime = new DateTime(2025, 12, 15, 0, 0, 0, DateTimeKind.Utc);
+        var duration = TimeSpan.FromMinutes(30);
+
+        var result = await _repository.HasOverlappingAppointment(doctorId, newAppointmentDateTime, duration, CancellationToken.None);
+
+        result.Should().BeTrue("existing appointment spilling from previous day must conflict with early-today booking");
+    }
+
     #endregion
 
     #region GetDoctorSchedules Tests
