@@ -140,13 +140,11 @@ public class RescheduleAppointmentCommandHandlerTests
             .ReturnsAsync(appointment);
         _mockRepository.Setup(x => x.GetDoctorSchedules(appointment.DoctorId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { schedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(
-                appointment.DoctorId,
-                It.IsAny<DateTime>(),
-                It.IsAny<TimeSpan>(),
-                It.IsAny<CancellationToken>(),
-                appointment.Id))
-            .ReturnsAsync(true);
+        _mockRepository.Setup(x => x.UpdateAppointmentIfNoOverlap(
+                It.IsAny<Appointment>(),
+                appointment.Id,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Appointment?)null);
 
         var exception = await Assert.ThrowsAsync<ValidationException>(() =>
             _handler.Handle(command, CancellationToken.None));
@@ -175,15 +173,11 @@ public class RescheduleAppointmentCommandHandlerTests
             .ReturnsAsync(appointment);
         _mockRepository.Setup(x => x.GetDoctorSchedules(appointment.DoctorId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { schedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(
-                appointment.DoctorId,
-                It.IsAny<DateTime>(),
-                It.IsAny<TimeSpan>(),
-                It.IsAny<CancellationToken>(),
-                appointment.Id))
-            .ReturnsAsync(false);
-        _mockRepository.Setup(x => x.UpdateAppointment(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Appointment a, CancellationToken _) => a);
+        _mockRepository.Setup(x => x.UpdateAppointmentIfNoOverlap(
+                It.IsAny<Appointment>(),
+                appointment.Id,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Appointment a, Guid _, CancellationToken __) => a);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -194,19 +188,13 @@ public class RescheduleAppointmentCommandHandlerTests
         result.Message.Should().Contain("rescheduled successfully");
         result.AppointmentDateTime.Kind.Should().Be(DateTimeKind.Utc);
 
-        _mockRepository.Verify(x => x.UpdateAppointment(
+        _mockRepository.Verify(x => x.UpdateAppointmentIfNoOverlap(
             It.Is<Appointment>(a =>
                 a.Id == appointment.Id &&
                 a.Duration == TimeSpan.FromMinutes(45) &&
                 a.Status == AppointmentStatus.Scheduled),
+            appointment.Id,
             It.IsAny<CancellationToken>()), Times.Once);
-
-        _mockRepository.Verify(x => x.HasOverlappingAppointment(
-            appointment.DoctorId,
-            It.IsAny<DateTime>(),
-            It.IsAny<TimeSpan>(),
-            It.IsAny<CancellationToken>(),
-            appointment.Id), Times.Once);
     }
 
     [Fact]
@@ -232,15 +220,11 @@ public class RescheduleAppointmentCommandHandlerTests
             .ReturnsAsync(appointment);
         _mockRepository.Setup(x => x.GetDoctorSchedules(appointment.DoctorId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<DoctorSchedule> { schedule });
-        _mockRepository.Setup(x => x.HasOverlappingAppointment(
+        _mockRepository.Setup(x => x.UpdateAppointmentIfNoOverlap(
+                It.IsAny<Appointment>(),
                 It.IsAny<Guid>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<TimeSpan>(),
-                It.IsAny<CancellationToken>(),
-                It.IsAny<Guid?>()))
-            .ReturnsAsync(false);
-        _mockRepository.Setup(x => x.UpdateAppointment(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Appointment a, CancellationToken _) => a);
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Appointment a, Guid _, CancellationToken __) => a);
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

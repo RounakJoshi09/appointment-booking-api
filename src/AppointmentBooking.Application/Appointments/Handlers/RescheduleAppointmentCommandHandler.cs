@@ -85,23 +85,19 @@ public class RescheduleAppointmentCommandHandler : IRequestHandler<RescheduleApp
             throw new ValidationException("Appointment time must be within doctor's working hours");
         }
 
-        // Overlap and persistence use UTC instants (appointments stored in UTC).
-        var hasOverlap = await _appointmentRepository.HasOverlappingAppointment(
-            appointment.DoctorId,
-            utcAppointmentDateTime,
-            duration,
-            cancellationToken,
-            excludeAppointmentId: appointment.Id);
-
-        if (hasOverlap)
-        {
-            throw new ValidationException("Doctor already has an appointment scheduled during this time. Please choose a different time slot.");
-        }
-
+        // Overlap check + update run atomically (serializable transaction) so concurrent bookings cannot both succeed.
         appointment.AppointmentDateTime = utcAppointmentDateTime;
         appointment.Duration = duration;
 
-        var updatedAppointment = await _appointmentRepository.UpdateAppointment(appointment, cancellationToken);
+        var updatedAppointment = await _appointmentRepository.UpdateAppointmentIfNoOverlap(
+            appointment,
+            excludeAppointmentId: appointment.Id,
+            cancellationToken);
+
+        if (updatedAppointment is null)
+        {
+            throw new ValidationException("Doctor already has an appointment scheduled during this time. Please choose a different time slot.");
+        }
 
         return new RescheduleAppointmentResponse
         {

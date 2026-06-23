@@ -243,6 +243,111 @@ public class AppointmentRepositoryTests : IDisposable
 
     #endregion
 
+    #region Atomic create / update (overlap guard) Tests
+
+    [Fact]
+    public async Task CreateAppointmentIfNoOverlap_Should_Persist_When_Slot_Is_Free()
+    {
+        var appointment = new Appointment
+        {
+            PatientId = Guid.NewGuid(),
+            DoctorId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 15, 10, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+
+        var result = await _repository.CreateAppointmentIfNoOverlap(appointment, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().NotBe(Guid.Empty);
+        (await _context.Appointments.FindAsync(result.Id)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CreateAppointmentIfNoOverlap_Should_Return_Null_When_Slot_Overlaps()
+    {
+        var doctorId = Guid.NewGuid();
+        await _context.Appointments.AddAsync(new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 15, 10, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        });
+        await _context.SaveChangesAsync();
+
+        var conflicting = new Appointment
+        {
+            PatientId = Guid.NewGuid(),
+            DoctorId = doctorId,
+            AppointmentDateTime = new DateTime(2025, 12, 15, 10, 15, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+
+        var result = await _repository.CreateAppointmentIfNoOverlap(conflicting, CancellationToken.None);
+
+        result.Should().BeNull();
+        (await _context.Appointments.CountAsync(a => a.DoctorId == doctorId)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task UpdateAppointmentIfNoOverlap_Should_Allow_Self_When_Excluded()
+    {
+        var doctorId = Guid.NewGuid();
+        var existing = new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 15, 10, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+        await _context.Appointments.AddAsync(existing);
+        await _context.SaveChangesAsync();
+
+        existing.AppointmentDateTime = new DateTime(2025, 12, 15, 11, 0, 0, DateTimeKind.Utc);
+
+        var result = await _repository.UpdateAppointmentIfNoOverlap(existing, existing.Id, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.AppointmentDateTime.Should().Be(new DateTime(2025, 12, 15, 11, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public async Task UpdateAppointmentIfNoOverlap_Should_Return_Null_When_Another_Appointment_Overlaps()
+    {
+        var doctorId = Guid.NewGuid();
+        var moving = new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 15, 9, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+        var blocking = new Appointment
+        {
+            DoctorId = doctorId,
+            PatientId = Guid.NewGuid(),
+            AppointmentDateTime = new DateTime(2025, 12, 15, 11, 0, 0, DateTimeKind.Utc),
+            Duration = TimeSpan.FromMinutes(30),
+            Status = AppointmentStatus.Scheduled
+        };
+        await _context.Appointments.AddRangeAsync(moving, blocking);
+        await _context.SaveChangesAsync();
+
+        moving.AppointmentDateTime = new DateTime(2025, 12, 15, 11, 0, 0, DateTimeKind.Utc);
+
+        var result = await _repository.UpdateAppointmentIfNoOverlap(moving, moving.Id, CancellationToken.None);
+
+        result.Should().BeNull();
+    }
+
+    #endregion
+
     #region GetDoctorSchedules Tests
 
     [Fact]

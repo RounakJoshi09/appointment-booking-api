@@ -1,8 +1,9 @@
+using System.Data;
 using AppointmentBooking.Application.Interfaces.Appointments;
-using AppointmentBooking.Application.Interfaces;
 using AppointmentBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using AppointmentBooking.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AppointmentBooking.Infrastructure.Database.Appointments;
 
@@ -33,6 +34,103 @@ public class AppointmentRepository : IAppointmentRepository
         _context.Appointments.Update(appointment);
         await _context.SaveChangesAsync(cancellationToken);
         return appointment;
+    }
+
+    public async Task<Appointment?> CreateAppointmentIfNoOverlap(Appointment appointment, CancellationToken cancellationToken)
+    {
+        return await ExecuteWithOverlapGuardAsync(
+            appointment.DoctorId,
+            appointment.AppointmentDateTime,
+            appointment.Duration,
+            excludeAppointmentId: null,
+            persistAsync: async ct =>
+            {
+                await _context.Appointments.AddAsync(appointment, ct);
+                await _context.SaveChangesAsync(ct);
+                return appointment;
+            },
+            cancellationToken);
+    }
+
+    public async Task<Appointment?> UpdateAppointmentIfNoOverlap(Appointment appointment, Guid excludeAppointmentId, CancellationToken cancellationToken)
+    {
+        return await ExecuteWithOverlapGuardAsync(
+            appointment.DoctorId,
+            appointment.AppointmentDateTime,
+            appointment.Duration,
+            excludeAppointmentId,
+            persistAsync: async ct =>
+            {
+                _context.Appointments.Update(appointment);
+                await _context.SaveChangesAsync(ct);
+                return appointment;
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Serializable transaction closes the TOCTOU window between overlap read and write.
+    /// On relational providers this serializes conflicting bookings for the same doctor;
+    /// non-relational providers (e.g. in-memory tests) still re-check before save.
+    /// </summary>
+    private async Task<Appointment?> ExecuteWithOverlapGuardAsync(
+        Guid doctorId,
+        DateTime appointmentDateTime,
+        TimeSpan duration,
+        Guid? excludeAppointmentId,
+        Func<CancellationToken, Task<Appointment>> persistAsync,
+        CancellationToken cancellationToken)
+    {
+        IDbContextTransaction? transaction = null;
+        if (_context.Database.IsRelational())
+        {
+            transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        }
+
+        try
+        {
+            var hasOverlap = await HasOverlappingAppointment(
+                doctorId,
+                appointmentDateTime,
+                duration,
+                cancellationToken,
+                excludeAppointmentId);
+
+            if (hasOverlap)
+            {
+                if (transaction is not null)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                }
+
+                return null;
+            }
+
+            var saved = await persistAsync(cancellationToken);
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return saved;
+        }
+        catch
+        {
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+
+            throw;
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
     }
 
     public async Task<bool> HasOverlappingAppointment(Guid doctorId, DateTime appointmentDateTime, TimeSpan duration, CancellationToken cancellationToken, Guid? excludeAppointmentId = null)
